@@ -35,6 +35,13 @@ enum Sex {
   OTHER
 }
 
+enum TicketStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
 model User {
   id              String    @id @default(cuid())
   email           String?   @unique
@@ -48,6 +55,7 @@ model User {
   updatedAt       DateTime  @updatedAt
 
   alumniProfile   AlumniProfile?
+  supportTickets  SupportTicket[]
 
   @@index([role])
 }
@@ -70,4 +78,19 @@ model AlumniProfile {
   yearTo             Int?
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
+}
+
+model SupportTicket {
+  id        String       @id @default(cuid())
+  userId    String
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subject   String
+  message   String       @db.Text
+  status    TicketStatus @default(OPEN)
+  adminNote String?      @db.Text
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  @@index([userId])
+  @@index([status])
 }
