@@ -1,0 +1,73 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client"
+  output   = "../app/generated/prisma"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ALUMNI
+  STUDENT
+  EMPLOYER
+  PUBLIC_VISITOR
+  ADMIN
+  MODERATOR
+}
+
+enum UserStatus {
+  PENDING_VERIFICATION
+  ACTIVE
+  SUSPENDED
+}
+
+enum Sex {
+  MALE
+  FEMALE
+  OTHER
+}
+
+model User {
+  id              String    @id @default(cuid())
+  email           String?   @unique
+  phone           String    @unique
+  studentId       String?   @unique
+  passwordHash    String?
+  role            Role      @default(PUBLIC_VISITOR)
+  status          UserStatus @default(PENDING_VERIFICATION)
+  phoneVerifiedAt DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  alumniProfile   AlumniProfile?
+
+  @@index([role])
+}
+
+model AlumniProfile {
+  id                 String   @id @default(cuid())
+  userId             String   @unique
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fullName           String
+  age                Int?
+  sex                Sex
+  gender             String?
+  religion           String?
+  photoUrl           String?
+  residentialAddress String?
+  workAddress        String?
+  programOfStudy     String?
+  degreeType         String?
+  yearFrom           Int?
+  yearTo             Int?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+}
