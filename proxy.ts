@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 
-const PORTAL_PREFIXES = ["/dashboard", "/support"];
+const PORTAL_PREFIXES = ["/dashboard", "/support", "/id-card"];
 const ADMIN_PREFIXES = ["/admin"];
 const ADMIN_PUBLIC_PATHS = ["/admin-login"];
 

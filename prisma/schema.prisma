@@ -42,6 +42,14 @@ enum TicketStatus {
   CLOSED
 }
 
+enum PhysicalCardStatus {
+  REQUESTED
+  PRINTING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
 model User {
   id              String    @id @default(cuid())
   email           String?   @unique
@@ -54,8 +62,10 @@ model User {
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
-  alumniProfile   AlumniProfile?
-  supportTickets  SupportTicket[]
+  alumniProfile        AlumniProfile?
+  supportTickets       SupportTicket[]
+  virtualIdCard        VirtualIdCard?
+  physicalCardRequests PhysicalCardRequest[]
 
   @@index([role])
 }
@@ -90,6 +100,29 @@ model SupportTicket {
   adminNote String?      @db.Text
   createdAt DateTime     @default(now())
   updatedAt DateTime     @updatedAt
+
+  @@index([userId])
+  @@index([status])
+}
+
+model VirtualIdCard {
+  id         String   @id @default(cuid())
+  userId     String   @unique
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  cardNumber String   @unique
+  issuedAt   DateTime @default(now())
+}
+
+model PhysicalCardRequest {
+  id              String             @id @default(cuid())
+  userId          String
+  user            User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  deliveryAddress String             @db.Text
+  status          PhysicalCardStatus @default(REQUESTED)
+  paymentVerified Boolean            @default(false)
+  adminNote       String?            @db.Text
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
 
   @@index([userId])
   @@index([status])
