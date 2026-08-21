@@ -2,7 +2,7 @@ import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
-import { verifyOtp } from "@/lib/otp";
+import { verifyOtpForUser } from "@/lib/services/auth-service";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   session: { strategy: "jwt" },
@@ -22,24 +22,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const code = credentials?.code;
         if (typeof phone !== "string" || typeof code !== "string") return null;
 
-        const ok = await verifyOtp(phone, code);
-        if (!ok) return null;
-
-        const user = await prisma.user.findUnique({ where: { phone } });
-        if (!user || user.status === "SUSPENDED") return null;
-
-        if (user.status === "PENDING_VERIFICATION") {
-          await prisma.user.update({
-            where: { id: user.id },
-            data: { status: "ACTIVE", phoneVerifiedAt: new Date() },
-          });
+        try {
+          const user = await verifyOtpForUser(phone, code);
+          return { id: user.id, email: user.email, role: user.role };
+        } catch {
+          return null;
         }
-
-        return {
-          id: user.id,
-          email: user.email,
-          role: user.role,
-        };
       },
     }),
     Credentials({

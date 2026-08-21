@@ -1,34 +1,11 @@
 "use server";
 
-import { z } from "zod";
 import { redirect } from "next/navigation";
 import { AuthError } from "next-auth";
-import { prisma } from "@/lib/prisma";
-import { sendOtp } from "@/lib/otp";
 import { signIn } from "@/lib/auth";
-import type { Prisma } from "@/app/generated/prisma/client";
-
-const RegisterSchema = z.object({
-  role: z.enum(["ALUMNI", "STUDENT"]),
-  fullName: z.string().trim().min(2, "Full name must be at least 2 characters."),
-  sex: z.enum(["MALE", "FEMALE", "OTHER"], {
-    error: "Sex is required.",
-  }),
-  gender: z.string().trim().optional(),
-  religion: z.string().trim().optional(),
-  age: z.coerce.number().int().positive().optional(),
-  email: z
-    .union([z.email("Enter a valid email."), z.literal("")])
-    .optional(),
-  phone: z.string().trim().min(8, "Enter a valid phone number."),
-  studentId: z.string().trim().min(1, "Student Admission Number is required."),
-  residentialAddress: z.string().trim().optional(),
-  workAddress: z.string().trim().optional(),
-  programOfStudy: z.string().trim().optional(),
-  degreeType: z.string().trim().optional(),
-  yearFrom: z.coerce.number().int().optional(),
-  yearTo: z.coerce.number().int().optional(),
-});
+import { RegisterSchema } from "@/lib/schemas/auth";
+import { registerUser, sendLoginOtp } from "@/lib/services/auth-service";
+import { ConflictError, ForbiddenError, NotFoundError } from "@/lib/errors";
 
 export type RegisterState =
   | { errors?: Record<string, string[]>; message?: string }
@@ -42,49 +19,16 @@ export async function registerAlumni(
   if (!parsed.success) {
     return { errors: parsed.error.flatten().fieldErrors };
   }
-  const data = parsed.data;
 
-  const orConditions: Prisma.UserWhereInput[] = [
-    { phone: data.phone },
-    { studentId: data.studentId },
-  ];
-  if (data.email) orConditions.push({ email: data.email });
-
-  const existing = await prisma.user.findFirst({ where: { OR: orConditions } });
-  if (existing) {
-    return {
-      message:
-        "An account with this phone number, student ID, or email already exists.",
-    };
+  try {
+    const user = await registerUser(parsed.data);
+    redirect(`/verify?phone=${encodeURIComponent(user.phone)}`);
+  } catch (error) {
+    if (error instanceof ConflictError) {
+      return { message: error.message };
+    }
+    throw error;
   }
-
-  await prisma.user.create({
-    data: {
-      phone: data.phone,
-      email: data.email || undefined,
-      studentId: data.studentId,
-      role: data.role,
-      status: "PENDING_VERIFICATION",
-      alumniProfile: {
-        create: {
-          fullName: data.fullName,
-          sex: data.sex,
-          gender: data.gender || undefined,
-          religion: data.religion || undefined,
-          age: data.age,
-          residentialAddress: data.residentialAddress || undefined,
-          workAddress: data.workAddress || undefined,
-          programOfStudy: data.programOfStudy || undefined,
-          degreeType: data.degreeType || undefined,
-          yearFrom: data.yearFrom,
-          yearTo: data.yearTo,
-        },
-      },
-    },
-  });
-
-  await sendOtp(data.phone);
-  redirect(`/verify?phone=${encodeURIComponent(data.phone)}`);
 }
 
 export type SimpleState = { message?: string } | undefined;
@@ -96,13 +40,15 @@ export async function requestLoginOtp(
   const phone = (formData.get("phone") as string | null)?.trim();
   if (!phone) return { message: "Phone number is required." };
 
-  const user = await prisma.user.findUnique({ where: { phone } });
-  if (!user) return { message: "No account found with this phone number." };
-  if (user.status === "SUSPENDED") {
-    return { message: "This account has been suspended." };
+  try {
+    await sendLoginOtp(phone);
+  } catch (error) {
+    if (error instanceof NotFoundError || error instanceof ForbiddenError) {
+      return { message: error.message };
+    }
+    throw error;
   }
 
-  await sendOtp(phone);
   redirect(`/verify?phone=${encodeURIComponent(phone)}`);
 }
 

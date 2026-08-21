@@ -4,38 +4,31 @@ import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireUser, requireRole } from "@/lib/dal";
+import { PhysicalCardRequestSchema } from "@/lib/schemas/id-card";
+import { createPhysicalCardRequest } from "@/lib/services/id-card-service";
+import { ConflictError } from "@/lib/errors";
 import type { SimpleState } from "@/app/actions/auth";
-
-const RequestSchema = z.object({
-  deliveryAddress: z
-    .string()
-    .trim()
-    .min(10, "Please provide a complete delivery address."),
-});
 
 export async function requestPhysicalCard(
   _prevState: SimpleState,
   formData: FormData
 ): Promise<SimpleState> {
   const user = await requireUser();
-  const parsed = RequestSchema.safeParse(Object.fromEntries(formData.entries()));
+  const parsed = PhysicalCardRequestSchema.safeParse(
+    Object.fromEntries(formData.entries())
+  );
   if (!parsed.success) {
     return { message: parsed.error.issues[0]?.message ?? "Invalid input." };
   }
 
-  const pending = await prisma.physicalCardRequest.findFirst({
-    where: {
-      userId: user.id,
-      status: { in: ["REQUESTED", "PRINTING", "SHIPPED"] },
-    },
-  });
-  if (pending) {
-    return { message: "You already have a physical card request in progress." };
+  try {
+    await createPhysicalCardRequest(user.id, parsed.data);
+  } catch (error) {
+    if (error instanceof ConflictError) {
+      return { message: error.message };
+    }
+    throw error;
   }
-
-  await prisma.physicalCardRequest.create({
-    data: { userId: user.id, deliveryAddress: parsed.data.deliveryAddress },
-  });
 
   revalidatePath("/id-card");
   return { message: "Physical card request submitted." };

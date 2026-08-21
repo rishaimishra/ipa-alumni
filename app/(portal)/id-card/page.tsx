@@ -1,8 +1,11 @@
 import QRCode from "qrcode";
-import { headers } from "next/headers";
 import { requireUser } from "@/lib/dal";
 import { prisma } from "@/lib/prisma";
-import { getOrCreateVirtualCard } from "@/lib/id-card";
+import { getAppOrigin } from "@/lib/url";
+import {
+  getOrCreateVirtualCard,
+  getMyPhysicalCardRequest,
+} from "@/lib/services/id-card-service";
 import { IdCardVisual } from "@/components/id-card-visual";
 import { PhysicalCardForm } from "./physical-card-form";
 
@@ -16,16 +19,11 @@ export default async function IdCardPage() {
 
   const card = await getOrCreateVirtualCard(user.id);
 
-  const headerList = await headers();
-  const host = headerList.get("host");
-  const protocol = host?.startsWith("localhost") ? "http" : "https";
-  const verifyUrl = `${protocol}://${host}/verify-card/${card.cardNumber}`;
+  const origin = await getAppOrigin();
+  const verifyUrl = `${origin}/verify-card/${card.cardNumber}`;
   const qrDataUrl = await QRCode.toDataURL(verifyUrl, { margin: 1, width: 200 });
 
-  const physicalRequest = await prisma.physicalCardRequest.findFirst({
-    where: { userId: user.id },
-    orderBy: { createdAt: "desc" },
-  });
+  const physicalRequest = await getMyPhysicalCardRequest(user.id);
 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col items-center gap-8 px-6 py-10">

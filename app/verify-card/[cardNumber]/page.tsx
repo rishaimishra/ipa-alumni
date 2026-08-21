@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/prisma";
+import { getCardForVerification } from "@/lib/services/id-card-service";
 
 export default async function VerifyCardPage({
   params,
@@ -7,10 +7,7 @@ export default async function VerifyCardPage({
 }) {
   const { cardNumber } = await params;
 
-  const card = await prisma.virtualIdCard.findUnique({
-    where: { cardNumber },
-    include: { user: { include: { alumniProfile: true } } },
-  });
+  const card = await getCardForVerification(cardNumber);
 
   if (!card) {
     return (

@@ -4,12 +4,9 @@ import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireUser, requireRole } from "@/lib/dal";
+import { CreateTicketSchema } from "@/lib/schemas/tickets";
+import { createTicket as createTicketService } from "@/lib/services/ticket-service";
 import type { SimpleState } from "@/app/actions/auth";
-
-const CreateTicketSchema = z.object({
-  subject: z.string().trim().min(3, "Subject must be at least 3 characters."),
-  message: z.string().trim().min(10, "Message must be at least 10 characters."),
-});
 
 export async function createTicket(
   _prevState: SimpleState,
@@ -21,13 +18,7 @@ export async function createTicket(
     return { message: parsed.error.issues[0]?.message ?? "Invalid input." };
   }
 
-  await prisma.supportTicket.create({
-    data: {
-      userId: user.id,
-      subject: parsed.data.subject,
-      message: parsed.data.message,
-    },
-  });
+  await createTicketService(user.id, parsed.data);
 
   revalidatePath("/support");
   return { message: "Ticket submitted." };
