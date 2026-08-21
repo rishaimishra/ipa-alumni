@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import { AdBanner } from "@/components/ad-banner";
 
 export default function HomePage() {
   return (
@@ -15,6 +16,9 @@ export default function HomePage() {
         <Button variant="outline" render={<a href="/login" />}>
           Login
         </Button>
+      </div>
+      <div className="w-full max-w-md">
+        <AdBanner />
       </div>
     </section>
   );

@@ -50,6 +50,19 @@ enum PhysicalCardStatus {
   CANCELLED
 }
 
+enum AnnouncementType {
+  ANNOUNCEMENT
+  EVENT
+  DEADLINE
+  NEWS
+}
+
+enum DevicePlatform {
+  ANDROID
+  IOS
+  WEB
+}
+
 model User {
   id              String    @id @default(cuid())
   email           String?   @unique
@@ -62,10 +75,12 @@ model User {
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
-  alumniProfile        AlumniProfile?
-  supportTickets       SupportTicket[]
-  virtualIdCard        VirtualIdCard?
-  physicalCardRequests PhysicalCardRequest[]
+  alumniProfile           AlumniProfile?
+  supportTickets          SupportTicket[]
+  virtualIdCard           VirtualIdCard?
+  physicalCardRequests    PhysicalCardRequest[]
+  announcementDismissals  AnnouncementDismissal[]
+  deviceTokens            DeviceToken[]
 
   @@index([role])
 }
@@ -103,6 +118,60 @@ model SupportTicket {
 
   @@index([userId])
   @@index([status])
+}
+
+model Announcement {
+  id        String           @id @default(cuid())
+  title     String
+  body      String           @db.Text
+  type      AnnouncementType @default(ANNOUNCEMENT)
+  isActive  Boolean          @default(true)
+  startsAt  DateTime         @default(now())
+  endsAt    DateTime?
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+
+  dismissals AnnouncementDismissal[]
+
+  @@index([isActive])
+}
+
+model AnnouncementDismissal {
+  id             String       @id @default(cuid())
+  userId         String
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  announcementId String
+  announcement   Announcement @relation(fields: [announcementId], references: [id], onDelete: Cascade)
+  dismissedAt    DateTime     @default(now())
+
+  @@unique([userId, announcementId])
+}
+
+model AdBanner {
+  id              String    @id @default(cuid())
+  title           String
+  imageUrl        String
+  linkUrl         String
+  isActive        Boolean   @default(true)
+  startsAt        DateTime  @default(now())
+  endsAt          DateTime?
+  impressionCount Int       @default(0)
+  clickCount      Int       @default(0)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([isActive])
+}
+
+model DeviceToken {
+  id        String         @id @default(cuid())
+  userId    String
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String         @unique
+  platform  DevicePlatform
+  createdAt DateTime       @default(now())
+
+  @@index([userId])
 }
 
 model VirtualIdCard {

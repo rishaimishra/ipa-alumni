@@ -2,6 +2,7 @@ import { requireUser } from "@/lib/dal";
 import { prisma } from "@/lib/prisma";
 import { signOut } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
+import { AdBanner } from "@/components/ad-banner";
 
 export default async function PortalDashboardPage() {
   const sessionUser = await requireUser();
@@ -47,6 +48,10 @@ export default async function PortalDashboardPage() {
           Feedback &amp; Support Tickets
         </a>
       </p>
+
+      <div className="mt-6 max-w-md">
+        <AdBanner />
+      </div>
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import { Users, Ticket, TicketCheck, GraduationCap } from "lucide-react";
+import { Users, Ticket, TicketCheck, GraduationCap, Megaphone, MousePointerClick } from "lucide-react";
 import { requireRole } from "@/lib/dal";
 import { prisma } from "@/lib/prisma";
 import { MetricCard } from "@/components/admin/metric-card";
@@ -53,6 +53,8 @@ export default async function AdminHomePage() {
     alumniCount,
     ticketCount,
     openTicketCount,
+    activeAnnouncementCount,
+    adClicksAggregate,
     recentUsers,
     recentRegistrations,
   ] = await Promise.all([
@@ -60,6 +62,8 @@ export default async function AdminHomePage() {
     prisma.user.count({ where: { role: { in: ["ALUMNI", "STUDENT"] } } }),
     prisma.supportTicket.count(),
     prisma.supportTicket.count({ where: { status: "OPEN" } }),
+    prisma.announcement.count({ where: { isActive: true } }),
+    prisma.adBanner.aggregate({ _sum: { clickCount: true } }),
     prisma.user.findMany({
       orderBy: { createdAt: "desc" },
       take: 5,
@@ -91,6 +95,16 @@ export default async function AdminHomePage() {
           label="Open Tickets"
           value={openTicketCount}
           icon={TicketCheck}
+        />
+        <MetricCard
+          label="Active Announcements"
+          value={activeAnnouncementCount}
+          icon={Megaphone}
+        />
+        <MetricCard
+          label="Total Ad Clicks"
+          value={adClicksAggregate._sum.clickCount ?? 0}
+          icon={MousePointerClick}
         />
       </div>
 

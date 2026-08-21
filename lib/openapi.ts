@@ -7,6 +7,7 @@ import {
 import { RegisterSchema, OtpRequestSchema, OtpVerifySchema } from "@/lib/schemas/auth";
 import { CreateTicketSchema } from "@/lib/schemas/tickets";
 import { PhysicalCardRequestSchema } from "@/lib/schemas/id-card";
+import { RegisterDeviceTokenSchema } from "@/lib/schemas/device-token";
 
 extendZodWithOpenApi(z);
 
@@ -170,6 +171,62 @@ registry.registerPath({
   responses: {
     200: { description: "Card details and validity" },
     404: { description: "Card not found", content: { "application/json": { schema: ErrorResponse } } },
+  },
+});
+
+registry.registerPath({
+  method: "get",
+  path: "/api/v1/me/announcements",
+  summary: "List active announcements not yet dismissed by the signed-in user",
+  tags: ["Notifications"],
+  security: [{ bearerAuth: [] }],
+  responses: { 200: { description: "List of announcements" } },
+});
+
+registry.registerPath({
+  method: "post",
+  path: "/api/v1/me/announcements/{id}/dismiss",
+  summary: "Dismiss an announcement so it stops appearing for this user",
+  tags: ["Notifications"],
+  security: [{ bearerAuth: [] }],
+  request: { params: z.object({ id: z.string() }) },
+  responses: { 200: { description: "Dismissed" } },
+});
+
+registry.registerPath({
+  method: "post",
+  path: "/api/v1/me/device-tokens",
+  summary: "Register a device's FCM push token for the signed-in user",
+  tags: ["Notifications"],
+  security: [{ bearerAuth: [] }],
+  request: {
+    body: { content: { "application/json": { schema: RegisterDeviceTokenSchema } } },
+  },
+  responses: { 201: { description: "Device registered" } },
+});
+
+registry.registerPath({
+  method: "get",
+  path: "/api/v1/ads",
+  summary: "List currently active ad banners",
+  tags: ["Ads"],
+  responses: { 200: { description: "List of banners" } },
+});
+
+registry.registerPath({
+  method: "post",
+  path: "/api/v1/ads/{id}/click",
+  summary: "Record a click on an ad banner and get its destination URL",
+  tags: ["Ads"],
+  request: { params: z.object({ id: z.string() }) },
+  responses: {
+    200: {
+      description: "Click recorded",
+      content: {
+        "application/json": { schema: z.object({ linkUrl: z.string() }) },
+      },
+    },
+    404: { description: "Banner not found", content: { "application/json": { schema: ErrorResponse } } },
   },
 });
 

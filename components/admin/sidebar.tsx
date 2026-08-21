@@ -2,13 +2,15 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutGrid, Users, Ticket, IdCard } from "lucide-react";
+import { LayoutGrid, Users, Ticket, IdCard, Megaphone, Image as ImageIcon } from "lucide-react";
 import { useSidebar } from "./sidebar-context";
 
 const navItems = [
   { name: "Dashboard", href: "/admin", icon: LayoutGrid },
   { name: "Users", href: "/admin/users", icon: Users },
   { name: "ID Cards", href: "/admin/id-cards", icon: IdCard },
+  { name: "Announcements", href: "/admin/announcements", icon: Megaphone },
+  { name: "Ads", href: "/admin/ads", icon: ImageIcon },
   { name: "Support Tickets", href: "/admin/tickets", icon: Ticket },
 ];
 

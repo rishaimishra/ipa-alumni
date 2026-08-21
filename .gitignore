@@ -45,3 +45,6 @@ yarn-error.log*
 next-env.d.ts
 
 /app/generated/prisma
+
+# dev-only local uploads — swapped for S3 in prod
+/public/uploads
